@@ -1,18 +1,11 @@
-			org 	$0 ; ON A CHANGE CETAIT $4 AVANT, PK ??
+			org 	$0 
 			
 vector_000 	dc.l 	$ffb500
 vector_001 	dc.l 	Main
 
 			org 	$500
 
-Main 		;movea.l #String1,a0
-			;movea.l #String1,a1
-			;jsr		RemoveSpace
-			
-			;jsr 	IsCharError
-			;jsr 	IsMaxError
-			;jsr 	Convert
-			
+Main 		
 			lea 	sTest,a0
 			move.b 	#24,d1
 			move.b 	#20,d2
@@ -60,20 +53,15 @@ IsCharError	movem.l d0/a0,-(a7)
 			rts
 
 
-IsMaxError 			; Sauvegarde les registres dans la pile.
+IsMaxError 			
 			movem.l d0/a0,-(a7)
-					; On récupère la taille de la chaîne (dans D0).
+					
 			jsr 	StrLen
-					; Si la chaîne a plus de 5 caractères, renvoie true (erreur).
-					; Si la chaîne a moins de 5 caractères, renvoie false (pas d'erreur).
+					
 			cmpi.l 	#5,d0
 			bhi 	\true
 			blo 	\false
-					; Si la chaîne contient exactement 5 caractères :
-					; comparaisons successives avec '3', '2', '7', '6' et '7'.
-					; Si supérieur, on quitte en renvoyant une erreur.
-					; Si inférieur, on quitte sans renvoyer d'erreur.
-					; Si égal, on compare le caractère suivant.
+					
 			cmpi.b 	#'3',(a0)+
 			bhi 	\true
 			blo 	\false
