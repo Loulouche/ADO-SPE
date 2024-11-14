@@ -93,24 +93,24 @@ IsMaxError 			; Sauvegarde les registres dans la pile.
 			cmpi.b 	#'7',(a0)
 			bhi 	\true
 			
-\false ; Sortie qui renvoie Z = 0 (aucune erreur).
-; (L'instruction BRA ne modifie pas le flag Z.)
+\false 
+
 			andi.b 	#%11111011,ccr
 			bra 	\quit
-\true ; Sortie qui renvoie Z = 1 (erreur).
+\true 
 			ori.b 	#%00000100,ccr
-\quit ; Restaure les registres puis sortie.
-; (Les instructions MOVEM et RTS ne modifient pas le flag Z.)
+\quit 
+
 			movem.l (a7)+,d0/a0
 			rts	
 
-StrLen 		move.l 	a0,-(a7) ; Sauvegarde le registre A0 dans la pile.
+StrLen 		move.l 	a0,-(a7) 
 			clr.l 	d0
 \loop 		tst.b 	(a0)+
 			beq 	\quit
 			addq.l 	#1,d0
 			bra 	\loop
-\quit 		movea.l (a7)+,a0 ; Restaure la valeur du registre A0.
+\quit 		movea.l (a7)+,a0 
 			rts
 
 Convert		tst 	(a0)
@@ -120,12 +120,12 @@ Convert		tst 	(a0)
 			jsr		IsMaxError
 			beq		\false
 			
-			jsr 	Calcul			;appelle Atoui
+			jsr 	Calcul			
 			
 \false 		andi.b 	#%11111011,ccr
 			rts	
 
-Calcul		movem.l d1/a0,-(a7) 	;Atoui
+Calcul		movem.l d1/a0,-(a7) 	
 			clr.l 	d0
 			clr.l 	d1
 			
@@ -178,37 +178,122 @@ NextOp		tst.b 	(a0)
 \quit 		rts
 
 
-GetNum		move.l a0,-(a7) ;encadrement
-			move.l a1,-(a7)
-			move.l a2,-(a7)
-			move.l a0,a1
+GetNum		movem.l d1/a1-a2,-(a7)
+			movea.l a0,a1
 			jsr NextOp
-			beq \false
 			move.l a0,a2
-			move.l a1,a0
+			move.b (a2),d1
+			clr.b (a2)
 			
-			move.w a2,d1
-			move.w a2,'\0'
+			movea.l a1,a0
 			jsr Convert
-			beq \false
-			move.w d1,a2
+			beq \true
 			
-			jsr \true
 
 \true 		
-			movem.l (a7)+,a1/a2
-			rts
+			move.b d1,(a2)
+			movea.l a2,a0
 
-\false 		movea.l (a7)+,a0
-			movea.l (a7)+,a1
-			movea.l (a7)+,a2
+\false 		
+			move.b d1,(a2)
+			andi.b #%11111011,ccr
+
+\quit 		movem.l (a7)+,d1/a1-a2
 			rts
 			
+GetExpr
+			movem.l d1-d2/a0,-(a7)
+			
+			jsr GetNum
+			bne \false
+			move.l d0,d1
 
- 		
-sTest 		dc.b 	"Hello World",0
+\loop
+			move.b (a0)+,d2
+			beq \true
+			
+			jsr GetNum
+			bne \false
 
+			cmp.b #'+',d2
+			beq \ad
 
+			cmp.b #'-',d2
+			beq \subtract
+			
+			cmp.b #'*',d2
+			beq \multiply
+
+			bra \divide
+			
+\ad 		
+			add.l d0,d1
+			bra \loop
+			
+\subtract	
+			sub.l d0,d1
+			bra \loop
+
+\multiply	
+			muls.w d0,d1
+			bra \loop
+
+\divide		
+			tst.w d0
+			beq \false
+			divs.w d0,d1
+			ext.l d1
+			bra \loop
+			
+\false		
+			andi.b #%11111011,ccr
+			bra \quit
+			
+\true		move.l d1,d0
+			ori.b #%00000100,ccr
+
+\quit 
+			movem.l (a7)+,d1-d2/a0
+			rts
+			
+Uitoa		
+			movem.l d0/a0,-(a7)
+			clr.w -(a7)
+
+\loop		andi.l #$ffff,d0
+			divu.w #10,d0
+			swap d0
+			addi.b #'0',d0
+			move.w d0,-(a7)
+			swap d0
+			tst.w d0
+			bne \loop
+			
+\writeChar 	
+			move.w (a7)+,d0
+			move.b d0,(a0)+
+			bne \writeChar
+			movem.l (a7)+,d0/a0
+			rts
+			
+\Itoa		move.l d0,-(a7)
+			move.w a1,-(a7)
+			tst.w 	d0
+			bpl 	\pos
+			jsr 	Uitoa
+
+\negative 	move.b 	#'-',(a0)+
+			neg.w 	d0
+			
+\pos		jsr Uitoa
+
+\quit		movem.l (a7)+,d0/a0
+			rts
+			
+			
+			
+			
+sTest 		dc.b	"52146",0
 
 
 
